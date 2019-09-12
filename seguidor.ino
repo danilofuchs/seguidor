@@ -21,7 +21,7 @@ float ERRO, ERRO_ANTERIOR = 0;
 float ULTIMAS_PROPORCOES[ULTIMAS_PROPORCOES_COUNT] = {0};
 int ULTIMAS_PROPORCOES_INDEX = -1;
 float VELOCIDADE_MIN_A, VELOCIDADE_MIN_B, VELOCIDADE_A, VELOCIDADE_B, VELOCIDADE;
-float VELLINEAR = 150;
+float VEL_MAX_LINEAR = 150;
 float VELMAX = 250;
 
 const uint8_t SensorCount = 8;
@@ -152,25 +152,28 @@ void loop()
     ERRO_ANTERIOR = ERRO_LEITURA;
 
     addItemUltimasProporcoes(VELOCIDADE);
+    float media = getMediaUltimasProporcoes();
+
+    float compensacaoVelocidade = constrain(1.0 - abs(media) / 1000.0, 0, 1);
+    float velocidade = VEL_MAX_LINEAR * compensacaoVelocidade;
 
     if (ERRO_LEITURA == 1 || ERRO_LEITURA == -1)
     {
       // Fora da pista
-      float media = getMediaUltimasProporcoes();
       if (media > 0)
       {
         // Saiu para a esquerda, precisa ir para a direita
-        acionaMotores(VELLINEAR, 500);
+        acionaMotores(velocidade, 400);
       }
       else
       {
         // Saiu para a direita, precisa ir para a esquerda
-        acionaMotores(VELLINEAR, -500);
+        acionaMotores(velocidade, -400);
       }
     }
     else
     {
-      acionaMotores(VELLINEAR, VELOCIDADE);
+      acionaMotores(velocidade, VELOCIDADE);
     }
 
     /*Serial.print("Sensor: ");

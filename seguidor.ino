@@ -16,8 +16,8 @@ QTRSensors qtr;
 
 #define ULTIMAS_PROPORCOES_COUNT 5
 
-float KD = 750, KI = 50, KP = 120, ERRO_LEITURA, INTEGRAL, INTEGRAL_ANTERIOR = 0;
-float KV = 300.0;
+float KD = 250, KI = 0, KP = 450, ERRO_LEITURA, INTEGRAL, INTEGRAL_ANTERIOR = 0;
+float KV = 0.5;
 float ERRO, ERRO_ANTERIOR = 0;
 float ULTIMAS_PROPORCOES[ULTIMAS_PROPORCOES_COUNT] = {0};
 int ULTIMAS_PROPORCOES_INDEX = -1;
@@ -70,13 +70,13 @@ void acionaMotores(float velLinear, float velRadial)
   VELOCIDADE_A = constrain(VELOCIDADE_A, -VELMAX, VELMAX);
   VELOCIDADE_B = constrain(VELOCIDADE_B, -VELMAX, VELMAX);
 
-  Serial.print(";   PID: ");
-  Serial.print(velRadial);
-  Serial.print(";   VelA: ");
-  Serial.print(VELOCIDADE_A);
-  Serial.print(";   VelB: ");
-  Serial.print(VELOCIDADE_B);
-  Serial.println(";");
+  // Serial.print(";   PID: ");
+  // Serial.print(velRadial);
+  // Serial.print(";   VelA: ");
+  // Serial.print(VELOCIDADE_A);
+  // Serial.print(";   VelB: ");
+  // Serial.print(VELOCIDADE_B);
+  // Serial.println(";");
 
   setMotorA(VELOCIDADE_A);
   setMotorB(VELOCIDADE_B);
@@ -95,7 +95,7 @@ void setup()
   qtr.setTypeRC();
   uint8_t sensorPins[] = {A0, A1, A2, A3, A4, A5, 2, 4};
   qtr.setSensorPins(sensorPins, SensorCount);
-  for (uint16_t i = 0; i < 400; i++)
+  for (uint16_t i = 0; i < 200; i++)
   {
     qtr.calibrate(); //calibração do sensor;
   }
@@ -146,17 +146,21 @@ void loop()
     int position = qtr.readLineWhite(sensorValues);
     ERRO = 3500 - position;
     ERRO_LEITURA = position / 3500.0 - 1.0;
-    INTEGRAL = KI * (ERRO_LEITURA + ERRO_ANTERIOR);
-    +INTEGRAL_ANTERIOR;
+    INTEGRAL = KI * ERRO_LEITURA + INTEGRAL_ANTERIOR;
     INTEGRAL_ANTERIOR = INTEGRAL;
     VELOCIDADE = KP * ERRO_LEITURA + KD * (ERRO_LEITURA - ERRO_ANTERIOR) + INTEGRAL;
     ERRO_ANTERIOR = ERRO_LEITURA;
 
+    VELOCIDADE /= 3;
+    VELOCIDADE = constrain(VELOCIDADE, -100, 100);
+
+    Serial.println(VELOCIDADE);
+
     addItemUltimasProporcoes(VELOCIDADE);
     float media = getMediaUltimasProporcoes();
 
-    float compensacaoVelocidade = constrain(1.0 - abs(media) / KV, 0, 1);
-    float velocidade = VEL_MAX_LINEAR * compensacaoVelocidade;
+    float compensacaoVelocidadeLinear = constrain(1.0 - (abs(media) / 100.0) * KV, 0, 1);
+    float velocidadeLinear = VEL_MAX_LINEAR * compensacaoVelocidadeLinear;
 
     if (ERRO_LEITURA == 1 || ERRO_LEITURA == -1)
     {
@@ -164,17 +168,17 @@ void loop()
       if (media > 0)
       {
         // Saiu para a esquerda, precisa ir para a direita
-        acionaMotores(velocidade, 400);
+        acionaMotores(velocidadeLinear, 400);
       }
       else
       {
         // Saiu para a direita, precisa ir para a esquerda
-        acionaMotores(velocidade, -400);
+        acionaMotores(velocidadeLinear, -400);
       }
     }
     else
     {
-      acionaMotores(velocidade, VELOCIDADE);
+      acionaMotores(velocidadeLinear, VELOCIDADE);
     }
 
     /*Serial.print("Sensor: ");

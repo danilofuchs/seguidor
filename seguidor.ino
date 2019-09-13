@@ -16,9 +16,9 @@ QTRSensors qtr;
 
 #define ULTIMAS_PROPORCOES_COUNT 5
 
-float KD = 1, KP = 4.5, ERRO_LEITURA;
+float KD = 3, KP = 7, ERRO_LEITURA;
 // 5
-float KV = 0;
+float KV = 0.7;
 // 0.5
 float ERRO, ERRO_ANTERIOR = 0;
 float ULTIMAS_PROPORCOES[ULTIMAS_PROPORCOES_COUNT] = {0};
@@ -88,6 +88,8 @@ void acionaMotores(float velLinear, float velRadial)
 
 void setup()
 {
+  Serial.begin(9600);
+  Serial.println("INICIO");
   pinMode(motorA, OUTPUT);
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
@@ -99,11 +101,10 @@ void setup()
   qtr.setTypeRC();
   const uint8_t sensorPins[] = {A0, A1, A2, A3, A4, A5, 2, 4};
   qtr.setSensorPins(sensorPins, SensorCount);
-  for (uint16_t i = 0; i < 300; i++)
+  for (uint16_t i = 0; i < 200; i++)
   {
     qtr.calibrate(); //calibração do sensor;
   }
-  Serial.begin(9600);
 
   digitalWrite(STBY, 1);
 
@@ -171,13 +172,13 @@ void loop()
     Serial.println("novo");
     Serial.println(CORRECAO);
 
+    addItemUltimasProporcoes(PID);
     float media = getMediaUltimasProporcoes();
 
     float compensacaoVelocidadeLinear = constrain(1.0 - (abs(media) / 100.0) * KV, 0, 1);
     float velocidadeLinear = VEL_MAX_LINEAR * compensacaoVelocidadeLinear;
 
     CORRECAO = PID * velocidadeLinear;
-    addItemUltimasProporcoes(CORRECAO);
 
     if (ERRO_LEITURA == 1 || ERRO_LEITURA == -1)
     {

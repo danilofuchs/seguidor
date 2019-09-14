@@ -9,6 +9,10 @@ QTRSensors qtr;
 #define IN4 6     //pino B1 ponte-h
 #define STBY 3
 
+#define IRD_PIN 13
+#define IRE_PIN 12
+#define NUM_LINHAS_PERCURSO_DIR 8
+
 #define SENSOR_COUNT 8
 
 #define PERIODO_AMOSTRAGEM 10
@@ -19,16 +23,23 @@ QTRSensors qtr;
 
 float KD = 5, KP = 9, erroLeitura;
 // 5
-float KV = 0.4;
+float KV = 0.6;
 // 0.5
 float erro, erroAnterior = 0;
 float ultimosPids[ULTIMOS_PIDS_SIZE] = {0};
 int ultimosPidsIndex = -1;
 float correcaoD, correcaoE, correcao;
+int potenciaD = 0;
+int potenciaE = 0;
 
 float maxProporcao = 300;
 
 uint16_t sensorValues[SENSOR_COUNT];
+
+byte IRE = 0;
+byte IRD = 0;
+
+int countLinhasD = 0;
 
 unsigned long previousMillis = 0, currentMillis = 0;
 
@@ -69,8 +80,8 @@ void acionaMotores(float velLinear, float velRadial)
   correcaoD = velLinear - (velRadial * 0.5);
   correcaoE = velLinear + (velRadial * 0.5);
 
-  correcaoD = constrain(correcaoD, -VELMAX, VELMAX);
-  correcaoE = constrain(correcaoE, -VELMAX, VELMAX);
+  potenciaD = constrain(correcaoD, -VELMAX, VELMAX);
+  potenciaE = constrain(correcaoE, -VELMAX, VELMAX);
 
   // Serial.print(";   PID: ");
   // Serial.print(velRadial);
@@ -80,8 +91,8 @@ void acionaMotores(float velLinear, float velRadial)
   // Serial.print(correcaoE);
   // Serial.println(";");
 
-  setMotorD(correcaoD);
-  setMotorE(correcaoE);
+  setMotorD(potenciaD);
+  setMotorE(potenciaE);
 }
 
 void addItemUltimasProporcoes(float item)
@@ -139,6 +150,30 @@ void setup()
 
 void loop()
 {
+  bool lastIRE = IRE;
+  bool lastIRD = IRD;
+  IRD = !digitalRead(IRD_PIN);
+  IRE = !digitalRead(IRE_PIN);
+  // Serial.print(IRD);
+  // Serial.print(", ");
+  // Serial.print(IRE);
+  // Serial.print(", ");
+  // Serial.print(lastIRD);
+  // Serial.print(", ");
+  // Serial.print(countLinhasD);
+  // Serial.println();
+  if (IRD && IRD != lastIRD)
+  {
+    countLinhasD++;
+  }
+  if (countLinhasD >= NUM_LINHAS_PERCURSO_DIR)
+  {
+    acionaMotores(255, 0);
+    delay(1000);
+    acionaMotores(0, 0);
+    Serial.println("FIM");
+    exit(0);
+  }
   currentMillis = millis();
   if (currentMillis - previousMillis >= PERIODO_AMOSTRAGEM)
   {
@@ -155,10 +190,9 @@ void loop()
     // PID: da ordem 1 a 10 (vezes o original)
     erroAnterior = erroLeitura;
 
-    addItemUltimasProporcoes(PID);
     float media = getMediaUltimasProporcoes();
 
-    float compensacaoVelocidadeLinear = constrain(1.0 - (abs(media) / 100.0) * KV, 0, 1);
+    float compensacaoVelocidadeLinear = constrain(1.0 - (abs(media) / 255.0) * KV, 0, 1);
     float velocidadeLinear = VEL_MAX_LINEAR * compensacaoVelocidadeLinear;
 
     correcao = PID * velocidadeLinear;
@@ -181,6 +215,8 @@ void loop()
     {
       acionaMotores(velocidadeLinear, correcao);
     }
+
+    addItemUltimasProporcoes(potenciaD - potenciaE);
 
     // Serial.print("Sensor: ");
     // Serial.print(position);

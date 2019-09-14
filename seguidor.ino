@@ -18,10 +18,10 @@ QTRSensors qtr;
 #define PERIODO_AMOSTRAGEM 10
 #define ULTIMOS_PIDS_SIZE 20 // 100 / PERIODO_AMOSTRAGEM;
 
-#define VEL_MAX_LINEAR 200
+#define VEL_MAX_LINEAR 255
 #define VELMAX 255
 
-float KD = 5, KP = 9, erroLeitura;
+float KD = 4, KP = 10, erroLeitura;
 // 5
 float KV = 0.6;
 // 0.5

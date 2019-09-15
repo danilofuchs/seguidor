@@ -21,10 +21,12 @@ QTRSensors qtr;
 #define VEL_MAX_LINEAR 255
 #define VELMAX 255
 
-float KD = 4, KP = 10, erroLeitura;
-// 5
-float KV = 0.6;
-// 0.5
+// float KD = 4, KP = 8, erroLeitura;
+// float KV = 1;
+float KD = 4, KP = 9, erroLeitura;
+float KV = 0.9;
+// float KD = 4, KP = 10, erroLeitura;
+// float KV = 0.6; // SUCESSO 23
 float erro, erroAnterior = 0;
 float ultimosPids[ULTIMOS_PIDS_SIZE] = {0};
 int ultimosPidsIndex = -1;
@@ -169,7 +171,7 @@ void loop()
   if (countLinhasD >= NUM_LINHAS_PERCURSO_DIR)
   {
     acionaMotores(255, 0);
-    delay(1000);
+    delay(800);
     acionaMotores(0, 0);
     Serial.println("FIM");
     exit(0);

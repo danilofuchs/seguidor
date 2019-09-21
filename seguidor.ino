@@ -1,15 +1,10 @@
 #include <QTRSensors.h>
 QTRSensors qtr;
 
-#define motorA 10 //pino A1 ponte-h
-#define motorB 5  //pino B2 ponte-h
-#define IN1 9     //pino B1 ponte-h
-#define IN2 8     //pino B1 ponte-h
-#define IN3 7     //pino B1 ponte-h
-#define IN4 6     //pino B1 ponte-h
-#define STBY 3
+#define MOTOR_DIR_PIN 3 //pino PWM motor A
+#define MOTOR_ESQ_PIN 5 //pino PWM motor B
 
-#define IRD_PIN 13
+#define IRD_PIN 8
 #define IRE_PIN 12
 #define NUM_LINHAS_PERCURSO_DIR 8
 
@@ -47,34 +42,12 @@ unsigned long previousMillis = 0, currentMillis = 0;
 
 void setMotorD(int vel)
 {
-  if (vel >= 0)
-  {
-    digitalWrite(IN1, 1);
-    digitalWrite(IN2, 0);
-    analogWrite(motorA, vel);
-  }
-  else
-  {
-    digitalWrite(IN1, 0);
-    digitalWrite(IN2, 1);
-    analogWrite(motorA, -vel);
-  }
+  analogWrite(MOTOR_DIR_PIN, vel);
 }
 
 void setMotorE(int vel)
 {
-  if (vel >= 0)
-  {
-    digitalWrite(IN3, 1);
-    digitalWrite(IN4, 0);
-    analogWrite(motorB, vel);
-  }
-  else
-  {
-    digitalWrite(IN3, 0);
-    digitalWrite(IN4, 1);
-    analogWrite(motorB, -vel);
-  }
+  analogWrite(MOTOR_ESQ_PIN, vel);
 }
 
 void acionaMotores(float velLinear, float velRadial)
@@ -82,8 +55,8 @@ void acionaMotores(float velLinear, float velRadial)
   correcaoD = velLinear - (velRadial * 0.5);
   correcaoE = velLinear + (velRadial * 0.5);
 
-  potenciaD = constrain(correcaoD, -VELMAX, VELMAX);
-  potenciaE = constrain(correcaoE, -VELMAX, VELMAX);
+  potenciaD = constrain(correcaoD, 0, VELMAX);
+  potenciaE = constrain(correcaoE, 0, VELMAX);
 
   // Serial.print(";   PID: ");
   // Serial.print(velRadial);
@@ -131,13 +104,8 @@ void setup()
 {
   Serial.begin(9600);
   Serial.println("INICIO");
-  pinMode(motorA, OUTPUT);
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-  pinMode(IN3, OUTPUT);
-  pinMode(IN4, OUTPUT);
-  pinMode(STBY, OUTPUT);
-  pinMode(motorB, OUTPUT);
+  pinMode(MOTOR_DIR_PIN, OUTPUT);
+  pinMode(MOTOR_ESQ_PIN, OUTPUT);
 
   qtr.setTypeRC();
   const uint8_t sensorPins[] = {A0, A1, A2, A3, A4, A5, 2, 4};
@@ -146,8 +114,6 @@ void setup()
   {
     qtr.calibrate(); //calibração do sensor;
   }
-
-  digitalWrite(STBY, 1);
 }
 
 void loop()
